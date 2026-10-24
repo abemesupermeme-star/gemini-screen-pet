@@ -6,11 +6,10 @@ namespace GeminiScreenPet.Services
 {
     public class PixelRenderer
     {
-        // 32 x 32 = 1024 Pixels!
         private const int GridSize = 32;
         private readonly Rectangle[] _pixelRects = new Rectangle[GridSize * GridSize];
         private readonly Canvas _canvas;
-        private const double PixelSize = 2.6; // 32 * 2.6 = 83.2px fitted in 84px canvas
+        private const double PixelSize = 2.6;
 
         public PixelRenderer(Canvas canvas)
         {
@@ -41,6 +40,8 @@ namespace GeminiScreenPet.Services
 
         public void Render(string[] frame, bool flipX = false)
         {
+            var palette = Animations.SpriteFrames.ActivePalette;
+
             for (int r = 0; r < GridSize; r++)
             {
                 string row = frame[r];
@@ -50,7 +51,7 @@ namespace GeminiScreenPet.Services
                     char ch = row[col];
                     var rect = _pixelRects[r * GridSize + c];
 
-                    if (ch != '.' && Animations.SpriteFrames.Palette.TryGetValue(ch, out var brush))
+                    if (ch != '.' && palette.TryGetValue(ch, out var brush))
                     {
                         rect.Fill = brush;
                         rect.Visibility = Visibility.Visible;

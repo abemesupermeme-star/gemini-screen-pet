@@ -8,15 +8,11 @@ namespace GeminiScreenPet
     {
         protected override void OnStartup(StartupEventArgs e)
         {
-            AppDomain.CurrentDomain.UnhandledException += (s, ev) =>
-            {
-                File.WriteAllText("crash.txt", ev.ExceptionObject.ToString());
-            };
-            DispatcherUnhandledException += (s, ev) =>
-            {
-                File.WriteAllText("crash_dispatcher.txt", ev.Exception.ToString());
-            };
             base.OnStartup(e);
+
+            // Launch transparent global particle trail overlay window
+            var trailOverlay = new TrailOverlay();
+            trailOverlay.Show();
         }
     }
 }

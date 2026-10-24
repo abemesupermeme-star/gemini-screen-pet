@@ -5,28 +5,55 @@ namespace GeminiScreenPet.Animations
 {
     public static class SpriteFrames
     {
-        public static readonly Dictionary<char, Brush> Palette = new();
+        public enum Theme
+        {
+            OfficialGemini, // Deep Blue to Purple gradient + White core
+            Monochrome,     // Crisp Black & White minimal
+            GoldSparkle,    // Golden Star
+            PinkLove        // Pink & Crimson Love
+        }
+
+        public static Theme CurrentTheme = Theme.OfficialGemini;
+
+        public static readonly Dictionary<char, Brush> PaletteOfficial = new();
+        public static readonly Dictionary<char, Brush> PaletteMono = new();
 
         static SpriteFrames()
         {
-            RegisterColor('B', Color.FromRgb(37, 99, 235));   // Deep Blue
-            RegisterColor('L', Color.FromRgb(96, 165, 250));  // Light Blue
-            RegisterColor('C', Color.FromRgb(165, 243, 252)); // Cyan Sparkle
-            RegisterColor('P', Color.FromRgb(139, 92, 246));  // Purple
-            RegisterColor('M', Color.FromRgb(217, 70, 239));  // Magenta
-            RegisterColor('W', Color.FromRgb(255, 255, 255));  // White
-            RegisterColor('K', Color.FromRgb(15, 23, 42));    // Dark Eyes / Outline
-            RegisterColor('Y', Color.FromRgb(244, 114, 182));  // Pink Blush
-            RegisterColor('G', Color.FromRgb(250, 204, 21));  // Golden Star
-            RegisterColor('R', Color.FromRgb(248, 113, 113));  // Heart Red
+            // Official Google Gemini Colors
+            RegisterColor(PaletteOfficial, 'W', Color.FromRgb(255, 255, 255)); // Pure White Core
+            RegisterColor(PaletteOfficial, 'C', Color.FromRgb(192, 232, 255)); // Soft Sparkle Cyan
+            RegisterColor(PaletteOfficial, 'L', Color.FromRgb(91, 158, 255));  // Vibrant Gemini Sky Blue
+            RegisterColor(PaletteOfficial, 'B', Color.FromRgb(26, 115, 232));  // Google Blue
+            RegisterColor(PaletteOfficial, 'P', Color.FromRgb(147, 51, 234));  // Gemini Deep Purple
+            RegisterColor(PaletteOfficial, 'M', Color.FromRgb(192, 38, 211));  // Deep Magenta
+            RegisterColor(PaletteOfficial, 'K', Color.FromRgb(15, 23, 42));    // Midnight Slate (Eyes)
+            RegisterColor(PaletteOfficial, 'Y', Color.FromRgb(244, 114, 182));  // Blush Pink
+            RegisterColor(PaletteOfficial, 'G', Color.FromRgb(250, 204, 21));  // Star Gold
+            RegisterColor(PaletteOfficial, 'R', Color.FromRgb(244, 63, 94));   // Rose Red
+
+            // Monochrome Minimalist Theme (B&W)
+            RegisterColor(PaletteMono, 'W', Color.FromRgb(255, 255, 255));
+            RegisterColor(PaletteMono, 'C', Color.FromRgb(241, 245, 249));
+            RegisterColor(PaletteMono, 'L', Color.FromRgb(203, 213, 225));
+            RegisterColor(PaletteMono, 'B', Color.FromRgb(148, 163, 184));
+            RegisterColor(PaletteMono, 'P', Color.FromRgb(71, 85, 105));
+            RegisterColor(PaletteMono, 'M', Color.FromRgb(30, 41, 59));
+            RegisterColor(PaletteMono, 'K', Color.FromRgb(0, 0, 0));
+            RegisterColor(PaletteMono, 'Y', Color.FromRgb(203, 213, 225));
+            RegisterColor(PaletteMono, 'G', Color.FromRgb(226, 232, 240));
+            RegisterColor(PaletteMono, 'R', Color.FromRgb(15, 23, 42));
         }
 
-        private static void RegisterColor(char key, Color color)
+        private static void RegisterColor(Dictionary<char, Brush> dict, char key, Color color)
         {
             var brush = new SolidColorBrush(color);
             brush.Freeze();
-            Palette[key] = brush;
+            dict[key] = brush;
         }
+
+        public static Dictionary<char, Brush> ActivePalette => 
+            CurrentTheme == Theme.Monochrome ? PaletteMono : PaletteOfficial;
 
         private static string[] Scale2x(string[] src16)
         {
@@ -46,7 +73,8 @@ namespace GeminiScreenPet.Animations
             return res;
         }
 
-        // 16x16 Raw Templates
+        // --- 16x16 BASE SHAPES WITH REFINED ANATOMY & GRADIENT ---
+        // 1. Idle Normal (Official Gemini 4-Point Star)
         private static readonly string[] _rawNormal = new string[16]
         {
             ".......WW.......",
@@ -67,6 +95,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
+        // 2. Walk Step 1 (Left Leg forward + Squash)
         private static readonly string[] _rawWalk1 = new string[16]
         {
             "................",
@@ -87,6 +116,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
+        // 3. Walk Step 2 (Right Leg forward + Stretch)
         private static readonly string[] _rawWalk2 = new string[16]
         {
             ".......WW.......",
@@ -107,6 +137,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
+        // 4. Happy Blink (^ _ ^)
         private static readonly string[] _rawHappy = new string[16]
         {
             ".......WW.......",
@@ -127,6 +158,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
+        // 5. Love Hearts in Eyes (♥ ♥)
         private static readonly string[] _rawLove = new string[16]
         {
             ".......WW.......",
@@ -147,6 +179,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
+        // 6. Cool Cyber Glasses 🕶️
         private static readonly string[] _rawCool = new string[16]
         {
             ".......WW.......",
@@ -167,6 +200,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
+        // 7. Sleep (Zzz)
         private static readonly string[] _rawSleep = new string[16]
         {
             ".......WW.......",
@@ -187,6 +221,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
+        // 8. Super Star (Golden Glow)
         private static readonly string[] _rawSuperStar = new string[16]
         {
             ".......WW.......",
@@ -207,7 +242,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
-        // 32x32 Hi-Res Pixel Sprites (1024 Pixels!)
+        // 32x32 Hi-Res Sprites
         public static readonly string[] Normal = Scale2x(_rawNormal);
         public static readonly string[] Walk1 = Scale2x(_rawWalk1);
         public static readonly string[] Walk2 = Scale2x(_rawWalk2);

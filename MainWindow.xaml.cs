@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 using GeminiScreenPet.Animations;
 using GeminiScreenPet.Models;
@@ -38,16 +36,6 @@ namespace GeminiScreenPet
         // Trail Ribbon / Particle System
         public enum TrailType { None, Cyan, Rainbow, Fire, Pink, Sparkle }
         private TrailType _currentTrail = TrailType.Cyan;
-        private readonly List<TrailParticle> _particles = new();
-
-        private class TrailParticle
-        {
-            public FrameworkElement Element { get; set; } = null!;
-            public double X { get; set; }
-            public double Y { get; set; }
-            public double Opacity { get; set; } = 1.0;
-            public double Size { get; set; } = 8.0;
-        }
 
         public MainWindow() : this(1.0, null, null) { }
 
@@ -63,7 +51,7 @@ namespace GeminiScreenPet
             Loaded += MainWindow_Loaded;
             MouseLeftButtonDown += MainWindow_MouseLeftButtonDown;
 
-            _timer.Interval = TimeSpan.FromMilliseconds(40); // 25 FPS
+            _timer.Interval = TimeSpan.FromMilliseconds(30); // ~33 FPS smooth motion
             _timer.Tick += Timer_Tick;
 
             _clickTimer.Interval = TimeSpan.FromMilliseconds(350);
@@ -209,71 +197,14 @@ namespace GeminiScreenPet
 
         private bool IsFacingLeft => _facing < 0;
 
-        private void SpawnTrailParticle(double centerX, double centerY)
+        private void EmitGlobalTrail()
         {
-            if (_currentTrail == TrailType.None) return;
-
-            Brush fill;
-            switch (_currentTrail)
+            if (TrailOverlay.Instance != null && _currentTrail != TrailType.None)
             {
-                case TrailType.Cyan:
-                    fill = new SolidColorBrush(Color.FromArgb(200, 56, 189, 248));
-                    break;
-                case TrailType.Rainbow:
-                    byte r = (byte)_rand.Next(100, 255);
-                    byte g = (byte)_rand.Next(100, 255);
-                    byte b = (byte)_rand.Next(100, 255);
-                    fill = new SolidColorBrush(Color.FromArgb(220, r, g, b));
-                    break;
-                case TrailType.Fire:
-                    fill = new SolidColorBrush(_rand.Next(2) == 0 ? Color.FromArgb(220, 249, 115, 22) : Color.FromArgb(220, 250, 204, 21));
-                    break;
-                case TrailType.Pink:
-                    fill = new SolidColorBrush(Color.FromArgb(220, 244, 114, 182));
-                    break;
-                case TrailType.Sparkle:
-                default:
-                    fill = new SolidColorBrush(Color.FromArgb(230, 255, 255, 255));
-                    break;
-            }
-
-            Shape shape = (_currentTrail == TrailType.Sparkle) 
-                ? new Rectangle { Width = 7, Height = 7, Fill = fill, RenderTransform = new RotateTransform(45) }
-                : new Ellipse { Width = 8, Height = 8, Fill = fill };
-
-            double pX = centerX + _rand.Next(-8, 8);
-            double pY = centerY + _rand.Next(-8, 8);
-
-            Canvas.SetLeft(shape, pX);
-            Canvas.SetTop(shape, pY);
-            TrailCanvas.Children.Add(shape);
-
-            _particles.Add(new TrailParticle
-            {
-                Element = shape,
-                X = pX,
-                Y = pY,
-                Opacity = 1.0,
-                Size = 8.0
-            });
-        }
-
-        private void UpdateTrail()
-        {
-            for (int i = _particles.Count - 1; i >= 0; i--)
-            {
-                var p = _particles[i];
-                p.Opacity -= 0.08;
-                p.Size = Math.Max(1.0, p.Size - 0.4);
-                p.Element.Opacity = Math.Max(0.0, p.Opacity);
-                p.Element.Width = p.Size;
-                p.Element.Height = p.Size;
-
-                if (p.Opacity <= 0)
-                {
-                    TrailCanvas.Children.Remove(p.Element);
-                    _particles.RemoveAt(i);
-                }
+                // Emit from center bottom of the pet in screen coordinates
+                double emitScreenX = Left + (Width / 2);
+                double emitScreenY = Top + Height - 50;
+                TrailOverlay.Instance.Emit(emitScreenX, emitScreenY, _currentTrail);
             }
         }
 
@@ -282,7 +213,6 @@ namespace GeminiScreenPet
             if (_isDragging) return;
 
             _ticksInState++;
-            UpdateTrail();
 
             if (_bubbleTicks > 0)
             {
@@ -303,7 +233,6 @@ namespace GeminiScreenPet
             string[] baseWalk1 = _isCool ? SpriteFrames.Cool : SpriteFrames.Walk1;
             string[] baseWalk2 = _isCool ? SpriteFrames.Cool : SpriteFrames.Walk2;
 
-            // Forced Always Follow Mouse toggle
             if (_alwaysFollowMouse && _state != PetState.Spin && _state != PetState.Bounce)
             {
                 _state = PetState.FollowMouse;
@@ -312,10 +241,18 @@ namespace GeminiScreenPet
             switch (_state)
             {
                 case PetState.Idle:
-                    double floatOffset = Math.Sin(_ticksInState * 0.15) * 1.6;
+                    // Smooth sinusoidal breathing & hover
+                    double floatOffset = Math.Sin(_ticksInState * 0.12) * 2.2;
                     Top = Math.Max(minY, Math.Min(maxY, Top + floatOffset));
 
-                    if (_ticksInState % 45 >= 41 && !_isCool)
+                    // Smooth subtle breathing scale squash & stretch
+                    double breathScaleY = 1.0 + Math.Sin(_ticksInState * 0.12) * 0.04;
+                    double breathScaleX = 1.0 - Math.Sin(_ticksInState * 0.12) * 0.02;
+                    PetScale.ScaleX = _customScale * breathScaleX;
+                    PetScale.ScaleY = _customScale * breathScaleY;
+
+                    // Periodic blink
+                    if (_ticksInState % 50 >= 46 && !_isCool)
                     {
                         _renderer.Render(SpriteFrames.Happy, IsFacingLeft);
                     }
@@ -324,7 +261,7 @@ namespace GeminiScreenPet
                         _renderer.Render(baseIdleFrame, IsFacingLeft);
                     }
 
-                    if (_ticksInState > 55)
+                    if (_ticksInState > 65)
                     {
                         int roll = _rand.Next(100);
                         if (roll < 45)
@@ -355,7 +292,7 @@ namespace GeminiScreenPet
                         }
                         else
                         {
-                            _ticksInState = 15;
+                            _ticksInState = 20;
                         }
                     }
                     break;
@@ -369,15 +306,21 @@ namespace GeminiScreenPet
                     {
                         _state = PetState.Idle;
                         _ticksInState = 0;
+                        ApplyScale(_customScale);
                         _renderer.Render(baseIdleFrame, IsFacingLeft);
                     }
                     else
                     {
-                        double speed = 3.6;
+                        double speed = 4.0;
                         Left += (dx / dist) * Math.Min(speed, dist);
                         Top += (dy / dist) * Math.Min(speed, dist);
 
-                        SpawnTrailParticle(Width / 2, Height - 60);
+                        // Organic walk bounce + tilt
+                        double walkSquash = 1.0 + Math.Sin(_ticksInState * 0.4) * 0.06;
+                        PetScale.ScaleY = _customScale * walkSquash;
+                        PetScale.ScaleX = _customScale * (2.0 - walkSquash);
+
+                        EmitGlobalTrail();
 
                         int stepPhase = (_ticksInState % 12);
                         if (stepPhase < 6)
@@ -397,14 +340,17 @@ namespace GeminiScreenPet
                         double fDy = _targetY - Top;
                         double fDist = Math.Sqrt(fDx * fDx + fDy * fDy);
 
-                        if (fDist > 70.0)
+                        if (fDist > 65.0)
                         {
                             _facing = (fDx >= 0) ? 1.0 : -1.0;
-                            double speed = 4.8;
+                            double speed = 5.2;
                             Left += (fDx / fDist) * Math.Min(speed, fDist);
                             Top += (fDy / fDist) * Math.Min(speed, fDist);
 
-                            SpawnTrailParticle(Width / 2, Height - 60);
+                            double followSquash = 1.0 + Math.Sin(_ticksInState * 0.45) * 0.08;
+                            PetScale.ScaleY = _customScale * followSquash;
+
+                            EmitGlobalTrail();
 
                             if ((_ticksInState % 8) < 4)
                                 _renderer.Render(baseWalk1, IsFacingLeft);
@@ -413,6 +359,7 @@ namespace GeminiScreenPet
                         }
                         else
                         {
+                            ApplyScale(_customScale);
                             _renderer.Render(SpriteFrames.Happy, IsFacingLeft);
                         }
 
@@ -420,6 +367,7 @@ namespace GeminiScreenPet
                         {
                             _state = PetState.Idle;
                             _ticksInState = 0;
+                            ApplyScale(_customScale);
                             _renderer.Render(baseIdleFrame, IsFacingLeft);
                         }
                     }
@@ -430,14 +378,16 @@ namespace GeminiScreenPet
                     break;
 
                 case PetState.Bounce:
-                    double bounceOffset = Math.Sin(_ticksInState * 0.45) * 7.0;
+                    double bounceOffset = Math.Sin(_ticksInState * 0.35) * 8.0;
                     Top = _targetY - Math.Abs(bounceOffset);
+                    PetScale.ScaleY = _customScale * (1.0 + Math.Abs(bounceOffset) * 0.02);
                     _renderer.Render(SpriteFrames.Happy, IsFacingLeft);
-                    if (_ticksInState > 22)
+                    if (_ticksInState > 24)
                     {
                         _state = PetState.Idle;
                         _ticksInState = 0;
                         Top = _targetY;
+                        ApplyScale(_customScale);
                         _renderer.Render(baseIdleFrame, IsFacingLeft);
                     }
                     break;
@@ -445,19 +395,22 @@ namespace GeminiScreenPet
                 case PetState.Spin:
                     _spinAngle = (_spinAngle + 30) % 360;
                     PetRotate.Angle = _spinAngle;
-                    SpawnTrailParticle(Width / 2, Height - 60);
+                    EmitGlobalTrail();
                     if (_ticksInState > 24)
                     {
                         _state = PetState.Idle;
                         _ticksInState = 0;
                         _spinAngle = 0;
                         PetRotate.Angle = 0;
+                        ApplyScale(_customScale);
                         _renderer.Render(SpriteFrames.Happy, IsFacingLeft);
                     }
                     break;
 
                 case PetState.Sleep:
                     _renderer.Render(SpriteFrames.Sleep, IsFacingLeft);
+                    double sleepBreathe = 1.0 + Math.Sin(_ticksInState * 0.06) * 0.03;
+                    PetScale.ScaleY = _customScale * sleepBreathe;
                     if (_ticksInState % 60 == 0)
                     {
                         Say("Zzz... 💤", 45);
@@ -465,28 +418,30 @@ namespace GeminiScreenPet
                     break;
 
                 case PetState.Party:
-                    double danceX = Math.Sin(_ticksInState * 0.6) * 4.0;
-                    double danceY = Math.Cos(_ticksInState * 0.6) * 4.0;
+                    double danceX = Math.Sin(_ticksInState * 0.6) * 4.5;
+                    double danceY = Math.Cos(_ticksInState * 0.6) * 4.5;
                     Left += danceX;
                     Top += danceY;
-                    SpawnTrailParticle(Width / 2, Height - 60);
+                    EmitGlobalTrail();
                     _renderer.Render(SpriteFrames.SuperStar, IsFacingLeft);
                     if (_ticksInState > 80)
                     {
                         _state = PetState.Idle;
                         _ticksInState = 0;
+                        ApplyScale(_customScale);
                         SetAuraColors(Color.FromArgb(0x90, 0x38, 0xBD, 0xF8), Color.FromArgb(0x50, 0x81, 0x8C, 0xF8));
                         _renderer.Render(baseIdleFrame, IsFacingLeft);
                     }
                     break;
 
                 case PetState.Love:
-                    SpawnTrailParticle(Width / 2, Height - 60);
+                    EmitGlobalTrail();
                     _renderer.Render(SpriteFrames.Love, IsFacingLeft);
                     if (_ticksInState > 65)
                     {
                         _state = PetState.Idle;
                         _ticksInState = 0;
+                        ApplyScale(_customScale);
                         SetAuraColors(Color.FromArgb(0x90, 0x38, 0xBD, 0xF8), Color.FromArgb(0x50, 0x81, 0x8C, 0xF8));
                         _renderer.Render(baseIdleFrame, IsFacingLeft);
                     }
@@ -510,6 +465,22 @@ namespace GeminiScreenPet
                 Say("Погуляю сам! ✨", 60);
                 _state = PetState.Idle;
             }
+        }
+
+        private void MenuThemeOfficial_Click(object sender, RoutedEventArgs e)
+        {
+            SpriteFrames.CurrentTheme = SpriteFrames.Theme.OfficialGemini;
+            SetAuraColors(Color.FromArgb(0x90, 0x38, 0xBD, 0xF8), Color.FromArgb(0x50, 0x81, 0x8C, 0xF8));
+            _renderer.Render(SpriteFrames.Normal, IsFacingLeft);
+            Say("✨ Официальный стиль Gemini!", 60);
+        }
+
+        private void MenuThemeMono_Click(object sender, RoutedEventArgs e)
+        {
+            SpriteFrames.CurrentTheme = SpriteFrames.Theme.Monochrome;
+            SetAuraColors(Color.FromArgb(0x80, 0x94, 0xA3, 0xB8), Color.FromArgb(0x40, 0x33, 0x41, 0x55));
+            _renderer.Render(SpriteFrames.Normal, IsFacingLeft);
+            Say("⚫⚪ Чёрно-белый минимализм!", 60);
         }
 
         private void MenuTrailNone_Click(object sender, RoutedEventArgs e) => _currentTrail = TrailType.None;

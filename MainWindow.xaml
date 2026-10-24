@@ -11,21 +11,21 @@
         WindowStartupLocation="Manual">
 
     <Window.Resources>
-        <!-- Modern Cyberpunk Context Menu Style -->
+        <!-- Modern Windows Acrylic / Glassmorphism Context Menu Style -->
         <Style TargetType="ContextMenu">
-            <Setter Property="Background" Value="#F40A0F1D"/>
-            <Setter Property="BorderBrush" Value="#38BDF8"/>
-            <Setter Property="BorderThickness" Value="1.5"/>
-            <Setter Property="Padding" Value="6,4"/>
+            <Setter Property="Background" Value="#A8121626"/>
+            <Setter Property="BorderBrush" Value="#40FFFFFF"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="6,6"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ContextMenu">
                         <Border Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="12">
+                                CornerRadius="16">
                             <Border.Effect>
-                                <DropShadowEffect Color="#0284C7" BlurRadius="22" ShadowDepth="4" Opacity="0.9"/>
+                                <DropShadowEffect Color="#000000" BlurRadius="30" ShadowDepth="8" Opacity="0.55"/>
                             </Border.Effect>
                             <StackPanel IsItemsHost="True" Margin="2"/>
                         </Border>
@@ -35,15 +35,15 @@
         </Style>
 
         <Style TargetType="MenuItem">
-            <Setter Property="Foreground" Value="#F0F9FF"/>
-            <Setter Property="FontFamily" Value="Segoe UI, Tahoma"/>
-            <Setter Property="FontSize" Value="12"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="Foreground" Value="#F8FAFC"/>
+            <Setter Property="FontFamily" Value="Segoe UI Variable, Segoe UI, sans-serif"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Padding" Value="12,7"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="MenuItem">
-                        <Border x:Name="ItemBorder" Background="Transparent" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                        <Border x:Name="ItemBorder" Background="Transparent" CornerRadius="10" Padding="{TemplateBinding Padding}">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
@@ -51,9 +51,9 @@
                                 </Grid.ColumnDefinitions>
                                 <ContentPresenter Grid.Column="0" ContentSource="Header"/>
                                 <Popup x:Name="SubMenuPopup" Grid.Column="1" IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}" Placement="Right">
-                                    <Border Background="#F40A0F1D" BorderBrush="#38BDF8" BorderThickness="1.5" CornerRadius="10" Padding="4">
+                                    <Border Background="#C0121626" BorderBrush="#40FFFFFF" BorderThickness="1" CornerRadius="14" Padding="4">
                                         <Border.Effect>
-                                            <DropShadowEffect Color="#0284C7" BlurRadius="18" ShadowDepth="3" Opacity="0.9"/>
+                                            <DropShadowEffect Color="#000000" BlurRadius="25" ShadowDepth="6" Opacity="0.5"/>
                                         </Border.Effect>
                                         <StackPanel IsItemsHost="True"/>
                                     </Border>
@@ -62,7 +62,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
-                                <Setter TargetName="ItemBorder" Property="Background" Value="#3038BDF8"/>
+                                <Setter TargetName="ItemBorder" Property="Background" Value="#25FFFFFF"/>
                                 <Setter Property="Foreground" Value="#FFFFFF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
@@ -72,8 +72,8 @@
         </Style>
 
         <Style TargetType="Separator">
-            <Setter Property="Background" Value="#334155"/>
-            <Setter Property="Margin" Value="4,3"/>
+            <Setter Property="Background" Value="#20FFFFFF"/>
+            <Setter Property="Margin" Value="6,4"/>
             <Setter Property="Height" Value="1"/>
         </Style>
     </Window.Resources>
@@ -81,14 +81,21 @@
     <Window.ContextMenu>
         <ContextMenu>
             <MenuItem Header="🎯 Режим: Следовать за курсором" Click="MenuFollowToggle_Click" x:Name="MenuFollowItem"/>
+            
+            <MenuItem Header="🎨 Тема и Расцветка">
+                <MenuItem Header="✨ Официальный Gemini (Deep Blue / Purple)" Click="MenuThemeOfficial_Click"/>
+                <MenuItem Header="⚫⚪ Чёрно-Белый Minimal (Monochrome)" Click="MenuThemeMono_Click"/>
+            </MenuItem>
+
             <MenuItem Header="🌈 Хвост / Шлейф">
-                <MenuItem Header="⚪ Без шлейфа" Click="MenuTrailNone_Click"/>
                 <MenuItem Header="💙 Неоновый синий (Default)" Click="MenuTrailCyan_Click"/>
                 <MenuItem Header="🌈 Радужный спектр" Click="MenuTrailRainbow_Click"/>
                 <MenuItem Header="🔥 Огненно-золотой" Click="MenuTrailFire_Click"/>
                 <MenuItem Header="💖 Розовое сияние" Click="MenuTrailPink_Click"/>
-                <MenuItem Header="✨ Звёздная пыль (Магия)" Click="MenuTrailSparkle_Click"/>
+                <MenuItem Header="✨ Звёздная пыль" Click="MenuTrailSparkle_Click"/>
+                <MenuItem Header="⚪ Без шлейфа" Click="MenuTrailNone_Click"/>
             </MenuItem>
+
             <Separator/>
             <MenuItem Header="❤️ Любовный режим" Click="MenuLove_Click"/>
             <MenuItem Header="🎉 Супер-Звезда (Party)" Click="MenuParty_Click"/>
@@ -104,32 +111,29 @@
     </Window.ContextMenu>
 
     <Grid>
-        <!-- Trail Canvas for Sparkles & Ribbons -->
-        <Canvas x:Name="TrailCanvas" Width="220" Height="220"/>
-
-        <!-- Speech Bubble -->
+        <!-- Speech Bubble (Frosted Glass style) -->
         <Border x:Name="SpeechBorder"
                 Visibility="Collapsed"
-                Background="#EE0B1120"
-                CornerRadius="12"
-                BorderBrush="#38BDF8"
-                BorderThickness="1.5"
-                Padding="10,6"
+                Background="#B00F172A"
+                CornerRadius="14"
+                BorderBrush="#35FFFFFF"
+                BorderThickness="1"
+                Padding="12,7"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
-                Margin="0,5,0,0">
+                Margin="0,6,0,0">
             <Border.Effect>
-                <DropShadowEffect Color="#0284C7" BlurRadius="16" ShadowDepth="2" Opacity="0.9"/>
+                <DropShadowEffect Color="#000000" BlurRadius="20" ShadowDepth="4" Opacity="0.5"/>
             </Border.Effect>
             <TextBlock x:Name="SpeechText"
-                       Foreground="#F0F9FF"
-                       FontSize="11"
-                       FontFamily="Segoe UI, Tahoma"
-                       FontWeight="Bold"
+                       Foreground="#FFFFFF"
+                       FontSize="11.5"
+                       FontFamily="Segoe UI Variable, Segoe UI, sans-serif"
+                       FontWeight="SemiBold"
                        Text="✨ Привет!"/>
         </Border>
 
-        <!-- Pet Body Container -->
+        <!-- Pet Body Container with Squash & Stretch + Smooth Physics -->
         <Canvas x:Name="PetContainer"
                 Width="100" Height="100"
                 HorizontalAlignment="Center"
@@ -143,8 +147,8 @@
                 </TransformGroup>
             </Canvas.RenderTransform>
 
-            <!-- Dynamic Aura Glow -->
-            <Ellipse x:Name="GlowEllipse" Width="96" Height="96" Canvas.Left="2" Canvas.Top="2" Opacity="0.6">
+            <!-- Dynamic Aura Glow with Breathing Animation -->
+            <Ellipse x:Name="GlowEllipse" Width="96" Height="96" Canvas.Left="2" Canvas.Top="2" Opacity="0.65">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
                         <GradientStop x:Name="GlowColor1" Color="#9038BDF8" Offset="0.0"/>
@@ -154,7 +158,7 @@
                 </Ellipse.Fill>
             </Ellipse>
 
-            <!-- 32x32 Hi-Res Pixel Grid Canvas -->
+            <!-- 32x32 Pixel Grid Canvas -->
             <Canvas x:Name="PixelGrid" Width="84" Height="84" Canvas.Left="8" Canvas.Top="8">
             </Canvas>
         </Canvas>
