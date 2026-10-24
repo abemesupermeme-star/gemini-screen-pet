@@ -92,6 +92,7 @@ namespace GeminiScreenPet
 
             ApplyScale(_customScale);
             _renderer.Render(SpriteFrames.Normal, false);
+            UpdateAutoStartMenuState();
             _timer.Start();
 
             if (_customScale < 0.9)
@@ -548,6 +549,28 @@ namespace GeminiScreenPet
         private void MenuMerge_Click(object sender, RoutedEventArgs e)
         {
             MergeAllIntoOne();
+        }
+
+        private void UpdateAutoStartMenuState()
+        {
+            bool isAuto = AutoStartHelper.IsAutoStartEnabled();
+            MenuAutoStartItem.Header = isAuto ? "✅ Автозапуск с Windows (ВКЛ)" : "🚀 Запуск вместе с Windows";
+        }
+
+        private void MenuAutoStart_Click(object sender, RoutedEventArgs e)
+        {
+            bool current = AutoStartHelper.IsAutoStartEnabled();
+            AutoStartHelper.SetAutoStart(!current);
+            UpdateAutoStartMenuState();
+
+            if (!current)
+            {
+                Say("🚀 Добавлен в автозагрузку!", 75);
+            }
+            else
+            {
+                Say("Удалён из автозагрузки ✨", 65);
+            }
         }
 
         private void MenuGlasses_Click(object sender, RoutedEventArgs e)

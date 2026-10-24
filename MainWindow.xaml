@@ -104,6 +104,7 @@
             <MenuItem Header="👥 Клонировать (Митоз)" Click="MenuClone_Click"/>
             <MenuItem Header="🧲 Объединить всех в одного" Click="MenuMerge_Click"/>
             <MenuItem Header="🕶️ Крутые очки" Click="MenuGlasses_Click"/>
+            <MenuItem Header="🚀 Запуск вместе с Windows" Click="MenuAutoStart_Click" x:Name="MenuAutoStartItem"/>
             <MenuItem Header="😴 Уложить спать" Click="MenuSleep_Click"/>
             <Separator/>
             <MenuItem Header="❌ Закрыть Gemini" Click="MenuExit_Click"/>
