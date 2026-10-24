@@ -265,16 +265,26 @@ namespace GeminiScreenPet
             }
         }
 
+        private DateTime _lastHungerDrainTime = DateTime.UtcNow;
+
         private void UpdateHunger()
         {
-            // Gradually drain hunger slowly
-            _hunger = Math.Max(0.0, _hunger - 0.02);
-            HungerProgressBar.Value = _hunger;
-            HungerPercentText.Text = $"{(int)_hunger}%";
-
-            if (_hunger < 20.0 && _ticksInState % 120 == 0 && _state != PetState.Sleep)
+            // Drain 1% per 30 minutes (1800 seconds)
+            var now = DateTime.UtcNow;
+            double elapsedSeconds = (now - _lastHungerDrainTime).TotalSeconds;
+            if (elapsedSeconds >= 1.0)
             {
-                Say("🍗 Я проголодался... Покорми звёздочкой!", 75);
+                double drain = elapsedSeconds / 1800.0; // 1.0 full percent per 1800s
+                _hunger = Math.Max(0.0, _hunger - drain);
+                _lastHungerDrainTime = now;
+
+                HungerProgressBar.Value = _hunger;
+                HungerPercentText.Text = $"{(int)Math.Round(_hunger)}%";
+            }
+
+            if (_hunger < 20.0 && _ticksInState % 180 == 0 && _state != PetState.Sleep)
+            {
+                Say("🍗 Я проголодался... Покорми звёздочкой!", 85);
             }
         }
 
@@ -602,11 +612,11 @@ namespace GeminiScreenPet
 
         private void MenuFeed_Click(object sender, RoutedEventArgs e)
         {
-            _hunger = Math.Min(100.0, _hunger + 35.0);
+            _hunger = Math.Min(100.0, _hunger + 25.0);
             HungerProgressBar.Value = _hunger;
-            HungerPercentText.Text = $"{(int)_hunger}%";
+            HungerPercentText.Text = $"{(int)Math.Round(_hunger)}%";
 
-            Say("Ням! Вкусная звёздочка! ⭐😋", 80);
+            Say("Ням! Вкусная звёздочка! +25% ⭐😋", 85);
             _state = PetState.Bounce;
             _ticksInState = 0;
         }
