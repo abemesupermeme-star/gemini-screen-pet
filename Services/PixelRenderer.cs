@@ -6,9 +6,11 @@ namespace GeminiScreenPet.Services
 {
     public class PixelRenderer
     {
-        private readonly Rectangle[] _pixelRects = new Rectangle[256];
+        // 32 x 32 = 1024 Pixels!
+        private const int GridSize = 32;
+        private readonly Rectangle[] _pixelRects = new Rectangle[GridSize * GridSize];
         private readonly Canvas _canvas;
-        private const double PixelSize = 5.0;
+        private const double PixelSize = 2.6; // 32 * 2.6 = 83.2px fitted in 84px canvas
 
         public PixelRenderer(Canvas canvas)
         {
@@ -19,9 +21,9 @@ namespace GeminiScreenPet.Services
         private void InitializeGrid()
         {
             _canvas.Children.Clear();
-            for (int r = 0; r < 16; r++)
+            for (int r = 0; r < GridSize; r++)
             {
-                for (int c = 0; c < 16; c++)
+                for (int c = 0; c < GridSize; c++)
                 {
                     var rect = new Rectangle
                     {
@@ -32,21 +34,21 @@ namespace GeminiScreenPet.Services
                     Canvas.SetLeft(rect, c * PixelSize);
                     Canvas.SetTop(rect, r * PixelSize);
                     _canvas.Children.Add(rect);
-                    _pixelRects[r * 16 + c] = rect;
+                    _pixelRects[r * GridSize + c] = rect;
                 }
             }
         }
 
         public void Render(string[] frame, bool flipX = false)
         {
-            for (int r = 0; r < 16; r++)
+            for (int r = 0; r < GridSize; r++)
             {
                 string row = frame[r];
-                for (int c = 0; c < 16; c++)
+                for (int c = 0; c < GridSize; c++)
                 {
-                    int col = flipX ? (15 - c) : c;
+                    int col = flipX ? (GridSize - 1 - c) : c;
                     char ch = row[col];
-                    var rect = _pixelRects[r * 16 + c];
+                    var rect = _pixelRects[r * GridSize + c];
 
                     if (ch != '.' && Animations.SpriteFrames.Palette.TryGetValue(ch, out var brush))
                     {

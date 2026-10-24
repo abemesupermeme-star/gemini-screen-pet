@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Windows.Media;
 
@@ -16,10 +15,10 @@ namespace GeminiScreenPet.Animations
             RegisterColor('P', Color.FromRgb(139, 92, 246));  // Purple
             RegisterColor('M', Color.FromRgb(217, 70, 239));  // Magenta
             RegisterColor('W', Color.FromRgb(255, 255, 255));  // White
-            RegisterColor('K', Color.FromRgb(15, 23, 42));    // Black / Dark Slate
+            RegisterColor('K', Color.FromRgb(15, 23, 42));    // Dark Eyes / Outline
             RegisterColor('Y', Color.FromRgb(244, 114, 182));  // Pink Blush
-            RegisterColor('G', Color.FromRgb(250, 204, 21));  // Golden Yellow
-            RegisterColor('R', Color.FromRgb(248, 113, 113));  // Heart / Love Red
+            RegisterColor('G', Color.FromRgb(250, 204, 21));  // Golden Star
+            RegisterColor('R', Color.FromRgb(248, 113, 113));  // Heart Red
         }
 
         private static void RegisterColor(char key, Color color)
@@ -29,8 +28,26 @@ namespace GeminiScreenPet.Animations
             Palette[key] = brush;
         }
 
-        // 1. Idle (Floating Star)
-        public static readonly string[] Normal = new string[16]
+        private static string[] Scale2x(string[] src16)
+        {
+            var res = new string[32];
+            for (int r = 0; r < 16; r++)
+            {
+                var sb = new System.Text.StringBuilder(32);
+                for (int c = 0; c < 16; c++)
+                {
+                    sb.Append(src16[r][c]);
+                    sb.Append(src16[r][c]);
+                }
+                string row = sb.ToString();
+                res[r * 2] = row;
+                res[r * 2 + 1] = row;
+            }
+            return res;
+        }
+
+        // 16x16 Raw Templates
+        private static readonly string[] _rawNormal = new string[16]
         {
             ".......WW.......",
             "......WCCW......",
@@ -50,8 +67,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
-        // 2. Walking Step 1
-        public static readonly string[] Walk1 = new string[16]
+        private static readonly string[] _rawWalk1 = new string[16]
         {
             "................",
             ".......WW.......",
@@ -71,8 +87,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
-        // 3. Walking Step 2 (Foot forward)
-        public static readonly string[] Walk2 = new string[16]
+        private static readonly string[] _rawWalk2 = new string[16]
         {
             ".......WW.......",
             "......WCCW......",
@@ -92,8 +107,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
-        // 4. Happy / Joy (^ _ ^)
-        public static readonly string[] Happy = new string[16]
+        private static readonly string[] _rawHappy = new string[16]
         {
             ".......WW.......",
             "......WCCW......",
@@ -113,8 +127,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
-        // 5. Love / Hearts in Eyes (♥ ♥)
-        public static readonly string[] Love = new string[16]
+        private static readonly string[] _rawLove = new string[16]
         {
             ".......WW.......",
             "......WCCW......",
@@ -134,8 +147,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
-        // 6. Cyber Sunglasses (🕶️ Deal With It)
-        public static readonly string[] Cool = new string[16]
+        private static readonly string[] _rawCool = new string[16]
         {
             ".......WW.......",
             "......WCCW......",
@@ -155,8 +167,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
-        // 7. Sleeping (Zzz...)
-        public static readonly string[] Sleep = new string[16]
+        private static readonly string[] _rawSleep = new string[16]
         {
             ".......WW.......",
             "......WCCW......",
@@ -176,29 +187,7 @@ namespace GeminiScreenPet.Animations
             ".......WW......."
         };
 
-        // 8. Shocked / Derp (O _ O)
-        public static readonly string[] Shocked = new string[16]
-        {
-            ".......WW.......",
-            "......WCCW......",
-            ".....WCCCCW.....",
-            ".....WLLLLW.....",
-            "....WLLBBLLW....",
-            "...WLLKKKKLLW...",
-            "..WLLKWKKWKLLW..",
-            ".WLLBBKWKKWKBLLW",
-            ".WLLBBKWKKWKBLLW",
-            "..WLLBWWYYWLLW..",
-            "...WLLKKKKLLW...",
-            "....WLLBBLLW....",
-            ".....WPPPPW.....",
-            ".....WMMMMW.....",
-            "......WMMW......",
-            ".......WW......."
-        };
-
-        // 9. Party / Golden Super Star
-        public static readonly string[] SuperStar = new string[16]
+        private static readonly string[] _rawSuperStar = new string[16]
         {
             ".......WW.......",
             "......WGGW......",
@@ -217,5 +206,15 @@ namespace GeminiScreenPet.Animations
             "......WGGW......",
             ".......WW......."
         };
+
+        // 32x32 Hi-Res Pixel Sprites (1024 Pixels!)
+        public static readonly string[] Normal = Scale2x(_rawNormal);
+        public static readonly string[] Walk1 = Scale2x(_rawWalk1);
+        public static readonly string[] Walk2 = Scale2x(_rawWalk2);
+        public static readonly string[] Happy = Scale2x(_rawHappy);
+        public static readonly string[] Love = Scale2x(_rawLove);
+        public static readonly string[] Cool = Scale2x(_rawCool);
+        public static readonly string[] Sleep = Scale2x(_rawSleep);
+        public static readonly string[] SuperStar = Scale2x(_rawSuperStar);
     }
 }

@@ -13,7 +13,7 @@
     <Window.Resources>
         <!-- Modern Cyberpunk Context Menu Style -->
         <Style TargetType="ContextMenu">
-            <Setter Property="Background" Value="#F20A0F1D"/>
+            <Setter Property="Background" Value="#F40A0F1D"/>
             <Setter Property="BorderBrush" Value="#38BDF8"/>
             <Setter Property="BorderThickness" Value="1.5"/>
             <Setter Property="Padding" Value="6,4"/>
@@ -25,7 +25,7 @@
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="12">
                             <Border.Effect>
-                                <DropShadowEffect Color="#0284C7" BlurRadius="20" ShadowDepth="4" Opacity="0.85"/>
+                                <DropShadowEffect Color="#0284C7" BlurRadius="22" ShadowDepth="4" Opacity="0.9"/>
                             </Border.Effect>
                             <StackPanel IsItemsHost="True" Margin="2"/>
                         </Border>
@@ -44,7 +44,21 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="MenuItem">
                         <Border x:Name="ItemBorder" Background="Transparent" CornerRadius="8" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter ContentSource="Header"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter Grid.Column="0" ContentSource="Header"/>
+                                <Popup x:Name="SubMenuPopup" Grid.Column="1" IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}" Placement="Right">
+                                    <Border Background="#F40A0F1D" BorderBrush="#38BDF8" BorderThickness="1.5" CornerRadius="10" Padding="4">
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="#0284C7" BlurRadius="18" ShadowDepth="3" Opacity="0.9"/>
+                                        </Border.Effect>
+                                        <StackPanel IsItemsHost="True"/>
+                                    </Border>
+                                </Popup>
+                            </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsHighlighted" Value="True">
@@ -66,7 +80,16 @@
 
     <Window.ContextMenu>
         <ContextMenu>
-            <MenuItem Header="✨ Поздороваться" Click="MenuSayHi_Click"/>
+            <MenuItem Header="🎯 Режим: Следовать за курсором" Click="MenuFollowToggle_Click" x:Name="MenuFollowItem"/>
+            <MenuItem Header="🌈 Хвост / Шлейф">
+                <MenuItem Header="⚪ Без шлейфа" Click="MenuTrailNone_Click"/>
+                <MenuItem Header="💙 Неоновый синий (Default)" Click="MenuTrailCyan_Click"/>
+                <MenuItem Header="🌈 Радужный спектр" Click="MenuTrailRainbow_Click"/>
+                <MenuItem Header="🔥 Огненно-золотой" Click="MenuTrailFire_Click"/>
+                <MenuItem Header="💖 Розовое сияние" Click="MenuTrailPink_Click"/>
+                <MenuItem Header="✨ Звёздная пыль (Магия)" Click="MenuTrailSparkle_Click"/>
+            </MenuItem>
+            <Separator/>
             <MenuItem Header="❤️ Любовный режим" Click="MenuLove_Click"/>
             <MenuItem Header="🎉 Супер-Звезда (Party)" Click="MenuParty_Click"/>
             <MenuItem Header="💫 Покружиться" Click="MenuSpin_Click"/>
@@ -81,7 +104,10 @@
     </Window.ContextMenu>
 
     <Grid>
-        <!-- Speech Bubble with Animation -->
+        <!-- Trail Canvas for Sparkles & Ribbons -->
+        <Canvas x:Name="TrailCanvas" Width="220" Height="220"/>
+
+        <!-- Speech Bubble -->
         <Border x:Name="SpeechBorder"
                 Visibility="Collapsed"
                 Background="#EE0B1120"
@@ -118,7 +144,7 @@
             </Canvas.RenderTransform>
 
             <!-- Dynamic Aura Glow -->
-            <Ellipse x:Name="GlowEllipse" Width="94" Height="94" Canvas.Left="3" Canvas.Top="3" Opacity="0.6">
+            <Ellipse x:Name="GlowEllipse" Width="96" Height="96" Canvas.Left="2" Canvas.Top="2" Opacity="0.6">
                 <Ellipse.Fill>
                     <RadialGradientBrush>
                         <GradientStop x:Name="GlowColor1" Color="#9038BDF8" Offset="0.0"/>
@@ -128,8 +154,8 @@
                 </Ellipse.Fill>
             </Ellipse>
 
-            <!-- Pixel Grid Canvas -->
-            <Canvas x:Name="PixelGrid" Width="80" Height="80" Canvas.Left="10" Canvas.Top="10">
+            <!-- 32x32 Hi-Res Pixel Grid Canvas -->
+            <Canvas x:Name="PixelGrid" Width="84" Height="84" Canvas.Left="8" Canvas.Top="8">
             </Canvas>
         </Canvas>
     </Grid>

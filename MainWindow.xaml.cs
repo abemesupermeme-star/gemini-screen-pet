@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using GeminiScreenPet.Animations;
 using GeminiScreenPet.Models;
@@ -31,6 +33,21 @@ namespace GeminiScreenPet
 
         private int _clickCount = 0;
         private bool _isCool = false;
+        private bool _alwaysFollowMouse = false;
+
+        // Trail Ribbon / Particle System
+        public enum TrailType { None, Cyan, Rainbow, Fire, Pink, Sparkle }
+        private TrailType _currentTrail = TrailType.Cyan;
+        private readonly List<TrailParticle> _particles = new();
+
+        private class TrailParticle
+        {
+            public FrameworkElement Element { get; set; } = null!;
+            public double X { get; set; }
+            public double Y { get; set; }
+            public double Opacity { get; set; } = 1.0;
+            public double Size { get; set; } = 8.0;
+        }
 
         public MainWindow() : this(1.0, null, null) { }
 
@@ -192,11 +209,80 @@ namespace GeminiScreenPet
 
         private bool IsFacingLeft => _facing < 0;
 
+        private void SpawnTrailParticle(double centerX, double centerY)
+        {
+            if (_currentTrail == TrailType.None) return;
+
+            Brush fill;
+            switch (_currentTrail)
+            {
+                case TrailType.Cyan:
+                    fill = new SolidColorBrush(Color.FromArgb(200, 56, 189, 248));
+                    break;
+                case TrailType.Rainbow:
+                    byte r = (byte)_rand.Next(100, 255);
+                    byte g = (byte)_rand.Next(100, 255);
+                    byte b = (byte)_rand.Next(100, 255);
+                    fill = new SolidColorBrush(Color.FromArgb(220, r, g, b));
+                    break;
+                case TrailType.Fire:
+                    fill = new SolidColorBrush(_rand.Next(2) == 0 ? Color.FromArgb(220, 249, 115, 22) : Color.FromArgb(220, 250, 204, 21));
+                    break;
+                case TrailType.Pink:
+                    fill = new SolidColorBrush(Color.FromArgb(220, 244, 114, 182));
+                    break;
+                case TrailType.Sparkle:
+                default:
+                    fill = new SolidColorBrush(Color.FromArgb(230, 255, 255, 255));
+                    break;
+            }
+
+            Shape shape = (_currentTrail == TrailType.Sparkle) 
+                ? new Rectangle { Width = 7, Height = 7, Fill = fill, RenderTransform = new RotateTransform(45) }
+                : new Ellipse { Width = 8, Height = 8, Fill = fill };
+
+            double pX = centerX + _rand.Next(-8, 8);
+            double pY = centerY + _rand.Next(-8, 8);
+
+            Canvas.SetLeft(shape, pX);
+            Canvas.SetTop(shape, pY);
+            TrailCanvas.Children.Add(shape);
+
+            _particles.Add(new TrailParticle
+            {
+                Element = shape,
+                X = pX,
+                Y = pY,
+                Opacity = 1.0,
+                Size = 8.0
+            });
+        }
+
+        private void UpdateTrail()
+        {
+            for (int i = _particles.Count - 1; i >= 0; i--)
+            {
+                var p = _particles[i];
+                p.Opacity -= 0.08;
+                p.Size = Math.Max(1.0, p.Size - 0.4);
+                p.Element.Opacity = Math.Max(0.0, p.Opacity);
+                p.Element.Width = p.Size;
+                p.Element.Height = p.Size;
+
+                if (p.Opacity <= 0)
+                {
+                    TrailCanvas.Children.Remove(p.Element);
+                    _particles.RemoveAt(i);
+                }
+            }
+        }
+
         private void Timer_Tick(object? sender, EventArgs e)
         {
             if (_isDragging) return;
 
             _ticksInState++;
+            UpdateTrail();
 
             if (_bubbleTicks > 0)
             {
@@ -216,6 +302,12 @@ namespace GeminiScreenPet
             string[] baseIdleFrame = _isCool ? SpriteFrames.Cool : SpriteFrames.Normal;
             string[] baseWalk1 = _isCool ? SpriteFrames.Cool : SpriteFrames.Walk1;
             string[] baseWalk2 = _isCool ? SpriteFrames.Cool : SpriteFrames.Walk2;
+
+            // Forced Always Follow Mouse toggle
+            if (_alwaysFollowMouse && _state != PetState.Spin && _state != PetState.Bounce)
+            {
+                _state = PetState.FollowMouse;
+            }
 
             switch (_state)
             {
@@ -285,6 +377,8 @@ namespace GeminiScreenPet
                         Left += (dx / dist) * Math.Min(speed, dist);
                         Top += (dy / dist) * Math.Min(speed, dist);
 
+                        SpawnTrailParticle(Width / 2, Height - 60);
+
                         int stepPhase = (_ticksInState % 12);
                         if (stepPhase < 6)
                             _renderer.Render(baseWalk1, IsFacingLeft);
@@ -297,18 +391,20 @@ namespace GeminiScreenPet
                     if (Win32Helper.GetCursorPos(out Win32Helper.POINT curPt))
                     {
                         _targetX = curPt.X - (Width / 2);
-                        _targetY = curPt.Y - Height + 20;
+                        _targetY = curPt.Y - Height + 30;
 
                         double fDx = _targetX - Left;
                         double fDy = _targetY - Top;
                         double fDist = Math.Sqrt(fDx * fDx + fDy * fDy);
 
-                        if (fDist > 80.0)
+                        if (fDist > 70.0)
                         {
                             _facing = (fDx >= 0) ? 1.0 : -1.0;
-                            double speed = 4.2;
+                            double speed = 4.8;
                             Left += (fDx / fDist) * Math.Min(speed, fDist);
                             Top += (fDy / fDist) * Math.Min(speed, fDist);
+
+                            SpawnTrailParticle(Width / 2, Height - 60);
 
                             if ((_ticksInState % 8) < 4)
                                 _renderer.Render(baseWalk1, IsFacingLeft);
@@ -320,7 +416,7 @@ namespace GeminiScreenPet
                             _renderer.Render(SpriteFrames.Happy, IsFacingLeft);
                         }
 
-                        if (_ticksInState > 160)
+                        if (!_alwaysFollowMouse && _ticksInState > 180)
                         {
                             _state = PetState.Idle;
                             _ticksInState = 0;
@@ -349,6 +445,7 @@ namespace GeminiScreenPet
                 case PetState.Spin:
                     _spinAngle = (_spinAngle + 30) % 360;
                     PetRotate.Angle = _spinAngle;
+                    SpawnTrailParticle(Width / 2, Height - 60);
                     if (_ticksInState > 24)
                     {
                         _state = PetState.Idle;
@@ -372,6 +469,7 @@ namespace GeminiScreenPet
                     double danceY = Math.Cos(_ticksInState * 0.6) * 4.0;
                     Left += danceX;
                     Top += danceY;
+                    SpawnTrailParticle(Width / 2, Height - 60);
                     _renderer.Render(SpriteFrames.SuperStar, IsFacingLeft);
                     if (_ticksInState > 80)
                     {
@@ -383,6 +481,7 @@ namespace GeminiScreenPet
                     break;
 
                 case PetState.Love:
+                    SpawnTrailParticle(Width / 2, Height - 60);
                     _renderer.Render(SpriteFrames.Love, IsFacingLeft);
                     if (_ticksInState > 65)
                     {
@@ -396,6 +495,30 @@ namespace GeminiScreenPet
         }
 
         #region Context Menu Handlers
+        private void MenuFollowToggle_Click(object sender, RoutedEventArgs e)
+        {
+            _alwaysFollowMouse = !_alwaysFollowMouse;
+            if (_alwaysFollowMouse)
+            {
+                MenuFollowItem.Header = "✅ Режим: Следовать за курсором (ВКЛ)";
+                Say("🎯 Я следую за твоим курсором!", 75);
+                _state = PetState.FollowMouse;
+            }
+            else
+            {
+                MenuFollowItem.Header = "🎯 Режим: Следовать за курсором (ВЫКЛ)";
+                Say("Погуляю сам! ✨", 60);
+                _state = PetState.Idle;
+            }
+        }
+
+        private void MenuTrailNone_Click(object sender, RoutedEventArgs e) => _currentTrail = TrailType.None;
+        private void MenuTrailCyan_Click(object sender, RoutedEventArgs e) => _currentTrail = TrailType.Cyan;
+        private void MenuTrailRainbow_Click(object sender, RoutedEventArgs e) => _currentTrail = TrailType.Rainbow;
+        private void MenuTrailFire_Click(object sender, RoutedEventArgs e) => _currentTrail = TrailType.Fire;
+        private void MenuTrailPink_Click(object sender, RoutedEventArgs e) => _currentTrail = TrailType.Pink;
+        private void MenuTrailSparkle_Click(object sender, RoutedEventArgs e) => _currentTrail = TrailType.Sparkle;
+
         private void MenuSayHi_Click(object sender, RoutedEventArgs e)
         {
             Say("✨ Рад тебя видеть! Хорошего дня!", 80);
