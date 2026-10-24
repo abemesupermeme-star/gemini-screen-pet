@@ -1,5 +1,5 @@
 using System.Windows.Controls;
-using System.Windows.Shapes;
+using Rectangle = System.Windows.Shapes.Rectangle;
 using System.Windows;
 
 namespace GeminiScreenPet.Services

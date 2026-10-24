@@ -1,5 +1,7 @@
 using System.Collections.Generic;
-using System.Windows.Media;
+using Brush = System.Windows.Media.Brush;
+using Color = System.Windows.Media.Color;
+using SolidColorBrush = System.Windows.Media.SolidColorBrush;
 
 namespace GeminiScreenPet.Animations
 {

@@ -13,10 +13,10 @@
     <Window.Resources>
         <!-- Modern Windows Acrylic / Glassmorphism Context Menu Style -->
         <Style TargetType="ContextMenu">
-            <Setter Property="Background" Value="#A8121626"/>
-            <Setter Property="BorderBrush" Value="#40FFFFFF"/>
+            <Setter Property="Background" Value="#CC121626"/>
+            <Setter Property="BorderBrush" Value="#45FFFFFF"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Padding" Value="6,6"/>
+            <Setter Property="Padding" Value="8,8"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ContextMenu">
@@ -25,7 +25,7 @@
                                 BorderThickness="{TemplateBinding BorderThickness}"
                                 CornerRadius="16">
                             <Border.Effect>
-                                <DropShadowEffect Color="#000000" BlurRadius="30" ShadowDepth="8" Opacity="0.55"/>
+                                <DropShadowEffect Color="#000000" BlurRadius="30" ShadowDepth="8" Opacity="0.6"/>
                             </Border.Effect>
                             <StackPanel IsItemsHost="True" Margin="2"/>
                         </Border>
@@ -51,9 +51,9 @@
                                 </Grid.ColumnDefinitions>
                                 <ContentPresenter Grid.Column="0" ContentSource="Header"/>
                                 <Popup x:Name="SubMenuPopup" Grid.Column="1" IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}" Placement="Right">
-                                    <Border Background="#C0121626" BorderBrush="#40FFFFFF" BorderThickness="1" CornerRadius="14" Padding="4">
+                                    <Border Background="#D5121626" BorderBrush="#45FFFFFF" BorderThickness="1" CornerRadius="14" Padding="6">
                                         <Border.Effect>
-                                            <DropShadowEffect Color="#000000" BlurRadius="25" ShadowDepth="6" Opacity="0.5"/>
+                                            <DropShadowEffect Color="#000000" BlurRadius="25" ShadowDepth="6" Opacity="0.55"/>
                                         </Border.Effect>
                                         <StackPanel IsItemsHost="True"/>
                                     </Border>
@@ -72,7 +72,7 @@
         </Style>
 
         <Style TargetType="Separator">
-            <Setter Property="Background" Value="#20FFFFFF"/>
+            <Setter Property="Background" Value="#25FFFFFF"/>
             <Setter Property="Margin" Value="6,4"/>
             <Setter Property="Height" Value="1"/>
         </Style>
@@ -80,6 +80,35 @@
 
     <Window.ContextMenu>
         <ContextMenu>
+            <!-- Hunger Bar Status Widget -->
+            <MenuItem StaysOpenOnClick="True">
+                <MenuItem.Header>
+                    <StackPanel Width="170" Margin="0,2,0,4">
+                        <Grid>
+                            <TextBlock Text="🍗 Сытость" Foreground="#94A3B8" FontSize="11" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="HungerPercentText" Text="100%" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" HorizontalAlignment="Right"/>
+                        </Grid>
+                        <Border Height="6" CornerRadius="3" Background="#20FFFFFF" Margin="0,4,0,0">
+                            <ProgressBar x:Name="HungerProgressBar" Value="100" Maximum="100" Height="6" BorderThickness="0" Background="Transparent" Foreground="#38BDF8"/>
+                        </Border>
+                    </StackPanel>
+                </MenuItem.Header>
+            </MenuItem>
+
+            <!-- Speed Slider Control Widget -->
+            <MenuItem StaysOpenOnClick="True">
+                <MenuItem.Header>
+                    <StackPanel Width="170" Margin="0,2,0,4">
+                        <Grid>
+                            <TextBlock Text="⚡ Скорость шага" Foreground="#94A3B8" FontSize="11" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="SpeedValueText" Text="4.0x" Foreground="#38BDF8" FontSize="11" FontWeight="Bold" HorizontalAlignment="Right"/>
+                        </Grid>
+                        <Slider x:Name="SpeedSlider" Minimum="1.0" Maximum="10.0" Value="4.0" ValueChanged="SpeedSlider_ValueChanged" Margin="0,4,0,0"/>
+                    </StackPanel>
+                </MenuItem.Header>
+            </MenuItem>
+
+            <Separator/>
             <MenuItem Header="🎯 Режим: Следовать за курсором" Click="MenuFollowToggle_Click" x:Name="MenuFollowItem"/>
             
             <MenuItem Header="🎨 Тема и Расцветка">
@@ -97,37 +126,38 @@
             </MenuItem>
 
             <Separator/>
+            <MenuItem Header="⭐ Покормить звёздочкой" Click="MenuFeed_Click"/>
             <MenuItem Header="❤️ Любовный режим" Click="MenuLove_Click"/>
             <MenuItem Header="🎉 Супер-Звезда (Party)" Click="MenuParty_Click"/>
             <MenuItem Header="💫 Покружиться" Click="MenuSpin_Click"/>
-            <MenuItem Header="⭐ Дать звёздочку" Click="MenuFeed_Click"/>
             <MenuItem Header="👥 Клонировать (Митоз)" Click="MenuClone_Click"/>
             <MenuItem Header="🧲 Объединить всех в одного" Click="MenuMerge_Click"/>
             <MenuItem Header="🕶️ Крутые очки" Click="MenuGlasses_Click"/>
             <MenuItem Header="🚀 Запуск вместе с Windows" Click="MenuAutoStart_Click" x:Name="MenuAutoStartItem"/>
             <MenuItem Header="😴 Уложить спать" Click="MenuSleep_Click"/>
             <Separator/>
+            <MenuItem Header="📥 Спрятать в системный трей" Click="MenuHideToTray_Click"/>
             <MenuItem Header="❌ Закрыть Gemini" Click="MenuExit_Click"/>
         </ContextMenu>
     </Window.ContextMenu>
 
     <Grid>
-        <!-- Speech Bubble (Frosted Glass style) -->
+        <!-- Speech Bubble (Frosted Glass style - Acrylic matching Menu) -->
         <Border x:Name="SpeechBorder"
                 Visibility="Collapsed"
-                Background="#B00F172A"
+                Background="#CC121626"
                 CornerRadius="14"
-                BorderBrush="#35FFFFFF"
+                BorderBrush="#40FFFFFF"
                 BorderThickness="1"
                 Padding="12,7"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Top"
                 Margin="0,6,0,0">
             <Border.Effect>
-                <DropShadowEffect Color="#000000" BlurRadius="20" ShadowDepth="4" Opacity="0.5"/>
+                <DropShadowEffect Color="#000000" BlurRadius="25" ShadowDepth="5" Opacity="0.55"/>
             </Border.Effect>
             <TextBlock x:Name="SpeechText"
-                       Foreground="#FFFFFF"
+                       Foreground="#F8FAFC"
                        FontSize="11.5"
                        FontFamily="Segoe UI Variable, Segoe UI, sans-serif"
                        FontWeight="SemiBold"

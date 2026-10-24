@@ -1,19 +1,23 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Threading;
 using GeminiScreenPet.Animations;
 using GeminiScreenPet.Models;
 using GeminiScreenPet.Services;
+using Forms = System.Windows.Forms;
+using Color = System.Windows.Media.Color;
 
 namespace GeminiScreenPet
 {
     public partial class MainWindow : Window
     {
         private static readonly List<MainWindow> _activePets = new();
+        private static Forms.NotifyIcon? _trayIcon;
+
         private readonly PixelRenderer _renderer;
         private readonly DispatcherTimer _timer = new();
         private readonly DispatcherTimer _clickTimer = new();
@@ -32,6 +36,10 @@ namespace GeminiScreenPet
         private int _clickCount = 0;
         private bool _isCool = false;
         private bool _alwaysFollowMouse = false;
+
+        // Hunger & Speed mechanics
+        private double _hunger = 100.0; // 0% to 100%
+        private double _moveSpeed = 4.0;
 
         // Trail Ribbon / Particle System
         public enum TrailType { None, Cyan, Rainbow, Fire, Pink, Sparkle }
@@ -93,6 +101,7 @@ namespace GeminiScreenPet
             ApplyScale(_customScale);
             _renderer.Render(SpriteFrames.Normal, false);
             UpdateAutoStartMenuState();
+            InitTrayIcon();
             _timer.Start();
 
             if (_customScale < 0.9)
@@ -103,6 +112,42 @@ namespace GeminiScreenPet
             {
                 Say("✨ Привет! Я Gemini! ✨", 90);
             }
+        }
+
+        private void InitTrayIcon()
+        {
+            if (_trayIcon != null) return;
+
+            _trayIcon = new Forms.NotifyIcon
+            {
+                Icon = SystemIcons.Application,
+                Text = "Gemini Screen Pet",
+                Visible = true
+            };
+
+            var trayMenu = new Forms.ContextMenuStrip();
+            trayMenu.Items.Add("✨ Показать Gemini", null, (s, e) => ShowFromTray());
+            trayMenu.Items.Add(new Forms.ToolStripSeparator());
+            trayMenu.Items.Add("❌ Закрыть приложение", null, (s, e) =>
+            {
+                _trayIcon.Visible = false;
+                _trayIcon.Dispose();
+                _trayIcon = null;
+                System.Windows.Application.Current.Shutdown();
+            });
+
+            _trayIcon.ContextMenuStrip = trayMenu;
+            _trayIcon.DoubleClick += (s, e) => ShowFromTray();
+        }
+
+        private void ShowFromTray()
+        {
+            foreach (var pet in _activePets)
+            {
+                pet.Show();
+                pet.WindowState = WindowState.Normal;
+            }
+            Say("✨ Я вернулся из трея!", 70);
         }
 
         private void ApplyScale(double s)
@@ -198,7 +243,6 @@ namespace GeminiScreenPet
                 catch { }
             }
 
-            // Instantly clear ghost trail particles
             TrailOverlay.Instance?.Clear();
 
             ApplyScale(1.0);
@@ -215,10 +259,31 @@ namespace GeminiScreenPet
         {
             if (TrailOverlay.Instance != null && _currentTrail != TrailType.None)
             {
-                // Emit from center bottom of the pet in screen coordinates
                 double emitScreenX = Left + (Width / 2);
                 double emitScreenY = Top + Height - 50;
                 TrailOverlay.Instance.Emit(emitScreenX, emitScreenY, _currentTrail);
+            }
+        }
+
+        private void UpdateHunger()
+        {
+            // Gradually drain hunger slowly
+            _hunger = Math.Max(0.0, _hunger - 0.02);
+            HungerProgressBar.Value = _hunger;
+            HungerPercentText.Text = $"{(int)_hunger}%";
+
+            if (_hunger < 20.0 && _ticksInState % 120 == 0 && _state != PetState.Sleep)
+            {
+                Say("🍗 Я проголодался... Покорми звёздочкой!", 75);
+            }
+        }
+
+        private void SpeedSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            _moveSpeed = e.NewValue;
+            if (SpeedValueText != null)
+            {
+                SpeedValueText.Text = $"{_moveSpeed:F1}x";
             }
         }
 
@@ -227,6 +292,7 @@ namespace GeminiScreenPet
             if (_isDragging) return;
 
             _ticksInState++;
+            UpdateHunger();
 
             if (_bubbleTicks > 0)
             {
@@ -255,17 +321,14 @@ namespace GeminiScreenPet
             switch (_state)
             {
                 case PetState.Idle:
-                    // Smooth sinusoidal breathing & hover
                     double floatOffset = Math.Sin(_ticksInState * 0.12) * 2.2;
                     Top = Math.Max(minY, Math.Min(maxY, Top + floatOffset));
 
-                    // Smooth subtle breathing scale squash & stretch
                     double breathScaleY = 1.0 + Math.Sin(_ticksInState * 0.12) * 0.04;
                     double breathScaleX = 1.0 - Math.Sin(_ticksInState * 0.12) * 0.02;
                     PetScale.ScaleX = _customScale * breathScaleX;
                     PetScale.ScaleY = _customScale * breathScaleY;
 
-                    // Periodic blink
                     if (_ticksInState % 50 >= 46 && !_isCool)
                     {
                         _renderer.Render(SpriteFrames.Happy, IsFacingLeft);
@@ -325,11 +388,10 @@ namespace GeminiScreenPet
                     }
                     else
                     {
-                        double speed = 4.0;
-                        Left += (dx / dist) * Math.Min(speed, dist);
-                        Top += (dy / dist) * Math.Min(speed, dist);
+                        double effectiveSpeed = (_hunger < 15.0) ? (_moveSpeed * 0.6) : _moveSpeed;
+                        Left += (dx / dist) * Math.Min(effectiveSpeed, dist);
+                        Top += (dy / dist) * Math.Min(effectiveSpeed, dist);
 
-                        // Organic walk bounce + tilt
                         double walkSquash = 1.0 + Math.Sin(_ticksInState * 0.4) * 0.06;
                         PetScale.ScaleY = _customScale * walkSquash;
                         PetScale.ScaleX = _customScale * (2.0 - walkSquash);
@@ -357,9 +419,9 @@ namespace GeminiScreenPet
                         if (fDist > 65.0)
                         {
                             _facing = (fDx >= 0) ? 1.0 : -1.0;
-                            double speed = 5.2;
-                            Left += (fDx / fDist) * Math.Min(speed, fDist);
-                            Top += (fDy / fDist) * Math.Min(speed, fDist);
+                            double followSpeed = _moveSpeed * 1.25;
+                            Left += (fDx / fDist) * Math.Min(followSpeed, fDist);
+                            Top += (fDy / fDist) * Math.Min(followSpeed, fDist);
 
                             double followSquash = 1.0 + Math.Sin(_ticksInState * 0.45) * 0.08;
                             PetScale.ScaleY = _customScale * followSquash;
@@ -464,6 +526,40 @@ namespace GeminiScreenPet
         }
 
         #region Context Menu Handlers
+        private void MenuHideToTray_Click(object sender, RoutedEventArgs e)
+        {
+            foreach (var pet in _activePets)
+            {
+                pet.Hide();
+            }
+            if (_trayIcon != null)
+            {
+                _trayIcon.ShowBalloonTip(3000, "Gemini спрятался!", "Кликни дважды по иконке в трее, чтобы вернуть меня обратно.", Forms.ToolTipIcon.Info);
+            }
+        }
+
+        private void UpdateAutoStartMenuState()
+        {
+            bool isAuto = AutoStartHelper.IsAutoStartEnabled();
+            MenuAutoStartItem.Header = isAuto ? "✅ Автозапуск с Windows (ВКЛ)" : "🚀 Запуск вместе с Windows";
+        }
+
+        private void MenuAutoStart_Click(object sender, RoutedEventArgs e)
+        {
+            bool current = AutoStartHelper.IsAutoStartEnabled();
+            AutoStartHelper.SetAutoStart(!current);
+            UpdateAutoStartMenuState();
+
+            if (!current)
+            {
+                Say("🚀 Добавлен в автозагрузку!", 75);
+            }
+            else
+            {
+                Say("Удалён из автозагрузки ✨", 65);
+            }
+        }
+
         private void MenuFollowToggle_Click(object sender, RoutedEventArgs e)
         {
             _alwaysFollowMouse = !_alwaysFollowMouse;
@@ -504,6 +600,17 @@ namespace GeminiScreenPet
         private void MenuTrailPink_Click(object sender, RoutedEventArgs e) => _currentTrail = TrailType.Pink;
         private void MenuTrailSparkle_Click(object sender, RoutedEventArgs e) => _currentTrail = TrailType.Sparkle;
 
+        private void MenuFeed_Click(object sender, RoutedEventArgs e)
+        {
+            _hunger = Math.Min(100.0, _hunger + 35.0);
+            HungerProgressBar.Value = _hunger;
+            HungerPercentText.Text = $"{(int)_hunger}%";
+
+            Say("Ням! Вкусная звёздочка! ⭐😋", 80);
+            _state = PetState.Bounce;
+            _ticksInState = 0;
+        }
+
         private void MenuSayHi_Click(object sender, RoutedEventArgs e)
         {
             Say("✨ Рад тебя видеть! Хорошего дня!", 80);
@@ -534,13 +641,6 @@ namespace GeminiScreenPet
             Say("Виууу! 💫", 60);
         }
 
-        private void MenuFeed_Click(object sender, RoutedEventArgs e)
-        {
-            Say("Ням! Вкусная звёздочка! ⭐😋", 80);
-            _state = PetState.Bounce;
-            _ticksInState = 0;
-        }
-
         private void MenuClone_Click(object sender, RoutedEventArgs e)
         {
             DoMitosis();
@@ -549,28 +649,6 @@ namespace GeminiScreenPet
         private void MenuMerge_Click(object sender, RoutedEventArgs e)
         {
             MergeAllIntoOne();
-        }
-
-        private void UpdateAutoStartMenuState()
-        {
-            bool isAuto = AutoStartHelper.IsAutoStartEnabled();
-            MenuAutoStartItem.Header = isAuto ? "✅ Автозапуск с Windows (ВКЛ)" : "🚀 Запуск вместе с Windows";
-        }
-
-        private void MenuAutoStart_Click(object sender, RoutedEventArgs e)
-        {
-            bool current = AutoStartHelper.IsAutoStartEnabled();
-            AutoStartHelper.SetAutoStart(!current);
-            UpdateAutoStartMenuState();
-
-            if (!current)
-            {
-                Say("🚀 Добавлен в автозагрузку!", 75);
-            }
-            else
-            {
-                Say("Удалён из автозагрузки ✨", 65);
-            }
         }
 
         private void MenuGlasses_Click(object sender, RoutedEventArgs e)
@@ -597,6 +675,12 @@ namespace GeminiScreenPet
 
         private void MenuExit_Click(object sender, RoutedEventArgs e)
         {
+            if (_trayIcon != null)
+            {
+                _trayIcon.Visible = false;
+                _trayIcon.Dispose();
+                _trayIcon = null;
+            }
             Close();
         }
         #endregion
