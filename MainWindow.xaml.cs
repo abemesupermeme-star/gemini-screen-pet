@@ -46,7 +46,12 @@ namespace GeminiScreenPet
             _renderer = new PixelRenderer(PixelGrid);
 
             _activePets.Add(this);
-            Closed += (s, e) => _activePets.Remove(this);
+            Closed += (s, e) =>
+            {
+                _timer.Stop();
+                _clickTimer.Stop();
+                _activePets.Remove(this);
+            };
 
             Loaded += MainWindow_Loaded;
             MouseLeftButtonDown += MainWindow_MouseLeftButtonDown;
@@ -184,8 +189,16 @@ namespace GeminiScreenPet
 
             foreach (var pet in others)
             {
-                try { pet.Close(); } catch { }
+                try 
+                { 
+                    pet._timer.Stop();
+                    pet.Close(); 
+                } 
+                catch { }
             }
+
+            // Instantly clear ghost trail particles
+            TrailOverlay.Instance?.Clear();
 
             ApplyScale(1.0);
             _state = PetState.Bounce;

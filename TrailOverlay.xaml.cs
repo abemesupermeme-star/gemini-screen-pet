@@ -70,6 +70,12 @@ namespace GeminiScreenPet
             _timer.Start();
         }
 
+        public void Clear()
+        {
+            _particles.Clear();
+            OverlayCanvas.Children.Clear();
+        }
+
         public void Emit(double screenX, double screenY, MainWindow.TrailType type)
         {
             if (type == MainWindow.TrailType.None) return;
